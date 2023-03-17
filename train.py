@@ -7,6 +7,7 @@ from glob import glob
 from easydict import EasyDict
 from PIL import Image, ImageOps
 from torch import optim
+from  torch import nn
 
 import utils
 from dataset import StegaData
@@ -15,7 +16,7 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 import lpips
 
-with open('cfg\setting.yaml', 'r') as f:
+with open('./cfg/setting.yaml', 'r') as f:
     args = EasyDict(yaml.load(f, Loader=yaml.SafeLoader))
 
 if not os.path.exists(args.checkpoints_path):
@@ -36,6 +37,10 @@ def main():
     decoder = model.StegaStampDecoder(secret_size=args.secret_size)
     discriminator = model.Discriminator()
     lpips_alex = lpips.LPIPS(net="alex", verbose=False)
+    encoder = nn.DataParallel(encoder)
+    decoder = nn.DataParallel(decoder)
+    discriminator = nn.DataParallel(discriminator)
+    lpips_alex = nn.DataParallel(lpips_alex)
     if args.cuda:
         encoder = encoder.cuda()
         decoder = decoder.cuda()
@@ -90,8 +95,20 @@ def main():
                                                                             yuv_scales, args, global_step, writer)
             if no_im_loss:
                 optimize_secret_loss.zero_grad()
+                # for name, parms in encoder.named_parameters():
+                #     print('-->name:', name)
+                #     print('-->para:', parms)
+                #     print('-->grad_requirs:', parms.requires_grad)
+                #     print('-->grad_value:', parms.grad)
+                #     print("===")
                 secret_loss.backward()
                 optimize_secret_loss.step()
+                # for name, parms in encoder.named_parameters():
+                #     print('-->name:', name)
+                #     print('-->para:', parms)
+                #     print('-->grad_requirs:', parms.requires_grad)
+                #     print('-->grad_value:', parms.grad)
+                #     print("===")
             else:
                 optimize_loss.zero_grad()
                 loss.backward()
@@ -101,7 +118,8 @@ def main():
                     optimize_dis.step()
 
             # if global_step % 10 == 0:
-            print('Loss = {:.4f}'.format(loss))
+            print('Step {}, Loss = {:.4f}, secret loss = {:.4f}, bit_acc = {:.2f}, str_acc = {:.2f}'\
+                  .format(global_step, loss.item(), secret_loss.item(), bit_acc.item(), str_acc.item()))
     writer.close()
     torch.save(encoder, os.path.join(args.saved_models, "encoder.pth"))
     torch.save(decoder, os.path.join(args.saved_models, "decoder.pth"))

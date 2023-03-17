@@ -12,9 +12,9 @@ BCH_BITS = 5
 def main():
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('model', type=str)
+    parser.add_argument('--model', type=str, default='/home/renge/Pycharm_Projects/Stegastamp_pytorch/saved_models/decoder.pth')
     parser.add_argument('--image', type=str, default=None)
-    parser.add_argument('--images_dir', type=str, default=None)
+    parser.add_argument('--images_dir', type=str, default=r'/home/renge/Pycharm_Projects/Stegastamp_pytorch/saved_images/hidden')
     parser.add_argument('--secret_size', type=int, default=100)
     parser.add_argument('--cuda', type=bool, default=True)
     args = parser.parse_args()

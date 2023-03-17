@@ -14,11 +14,16 @@ BCH_BITS = 5
 def main():
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('model', type=str)
-    parser.add_argument('--image', type=str, default=None)
-    parser.add_argument('--images_dir', type=str, default=None)
-    parser.add_argument('--save_dir', type=str, default=r'./images')
-    parser.add_argument('--secret', type=str, default='Stega!!')
+    parser.add_argument(
+        '--model',
+        default='/home/renge/Pycharm_Projects/Stegastamp_pytorch/saved_models/encoder.pth',
+        help='folder to save the data')
+    parser.add_argument('--image', default=None)
+    parser.add_argument('--images_dir',  default='/mnt/ext/renge/medium-imagenet-data/train/n02493793',
+        help='folder to save the data')
+    parser.add_argument('--save_dir',  default=r'/home/renge/Pycharm_Projects/Stegastamp_pytorch/saved_images',
+        help='folder to save the data')
+    parser.add_argument('--secret', default='SJTU!!')
     parser.add_argument('--secret_size', type=int, default=100)
     parser.add_argument('--cuda', type=bool, default=True)
     args = parser.parse_args()
@@ -26,7 +31,7 @@ def main():
     if args.image is not None:
         files_list = [args.image]
     elif args.images_dir is not None:
-        files_list = glob.glob(args.images_dir + '/*')
+        files_list = glob.glob(os.path.join(args.images_dir, '*.JPEG'))
     else:
         print('Missing input image')
         return
@@ -61,7 +66,8 @@ def main():
     if args.save_dir is not None:
         if not os.path.exists(args.save_dir):
             os.makedirs(args.save_dir)
-
+            os.makedirs(os.path.join(args.save_dir, 'hidden'))
+            os.makedirs(os.path.join(args.save_dir, 'residual'))
         with torch.no_grad():
             for filename in files_list:
                 image = Image.open(filename).convert("RGB")
@@ -83,10 +89,10 @@ def main():
                 save_name = os.path.basename(filename).split('.')[0]
 
                 im = Image.fromarray(encoded)
-                im.save(args.save_dir + '/' + save_name + '_hidden.png')
+                im.save(args.save_dir + '/hidden/' + save_name + '_hidden.png')
 
                 im = Image.fromarray(residual)
-                im.save(args.save_dir + '/' + save_name + '_residual.png')
+                im.save(args.save_dir + '/residual/' + save_name + '_residual.png')
 
 
 if __name__ == "__main__":
