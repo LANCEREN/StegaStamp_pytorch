@@ -1,0 +1,19 @@
+
+Fpython:S1066#"/Merge this if statement with the enclosing one.(¯Ò y
+opython:S117Ó"WRename this local variable "N_blur" to match the regular expression ^[_a-z][a-z0-9_]*$.(›ÚÉÄ
+>python:S1481Ã"&Remove the unused local variable "sh".(•œŞv
+Qpython:S1172‡"3Remove the unused function parameter "secret_size".(áÇÕ–ıÿÿÿÿ
+Lpython:S1172‡".Remove the unused function parameter "writer".(áÇÕ–ıÿÿÿÿ
+wpython:S117²"ZRename this local variable "D_heatmap" to match the regular expression ^[_a-z][a-z0-9_]*$.(±Èğ–úÿÿÿÿ
+tpython:S117Ş"WRename this local variable "D_loss" to match the regular expression ^[_a-z][a-z0-9_]*$.(ˆÉ®§şÿÿÿÿ
+{python:S117²"^Rename this local variable "D_output_fake" to match the regular expression ^[_a-z][a-z0-9_]*$.(±Èğ–úÿÿÿÿ
+vpython:S117±"^Rename this local variable "D_output_real" to match the regular expression ^[_a-z][a-z0-9_]*$.(÷İ÷Á
+npython:S117ß"WRename this local variable "G_loss" to match the regular expression ^[_a-z][a-z0-9_]*$.(¹”ôn
+jpython:S117‡"MRename this parameter "M" to match the regular expression ^[_a-z][a-z0-9_]*$.(áÇÕ–ıÿÿÿÿ
+opython:S107†"RFunction "build_model" has 15 parameters, which is greater than the 13 authorized.(µªÿÓøÿÿÿÿ
+Kpython:S1481ˆ"2Remove the unused local variable "test_transform".(ö¿Ñá
+Fpython:S1481Å"(Remove the unused local variable "gain".(¹ÆÓ½ıÿÿÿÿ
+Ppython:S1481™"2Remove the unused local variable "input_unwarped".(ş’¹úÿÿÿÿ
+Ppython:S1481Ÿ"2Remove the unused local variable "input_unwarped".(Êãì–ıÿÿÿÿ
+Ppython:S1481§"2Remove the unused local variable "input_unwarped".(Êãì–ıÿÿÿÿ
+6python:S125ä"Remove this commented out code.(î«ç}

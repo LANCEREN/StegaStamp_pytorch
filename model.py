@@ -22,8 +22,10 @@ class Dense(nn.Module):
 
         self.linear = nn.Linear(in_features, out_features)
         # initialization
-        if kernel_initializer == 'he_normal':
+        if self.kernel_initializer == 'he_normal':
             nn.init.kaiming_normal_(self.linear.weight)
+        elif self.kernel_initializer == 'xavier_normal':
+            nn.init.xavier_normal_(self.linear.weight)
         else:
             raise NotImplementedError
 
@@ -36,17 +38,23 @@ class Dense(nn.Module):
 
 
 class Conv2D(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size=3, activation='relu', strides=1):
+    def __init__(self, in_channels, out_channels, kernel_size=3, activation='relu', strides=1, kernel_initializer='he_normal'):
         super(Conv2D, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.kernel_size = kernel_size
         self.activation = activation
         self.strides = strides
+        self.kernel_initializer = kernel_initializer
 
         self.conv = nn.Conv2d(in_channels, out_channels, kernel_size, strides, int((kernel_size - 1) / 2))
         # default: using he_normal as the kernel initializer
-        nn.init.kaiming_normal_(self.conv.weight)
+        if self.kernel_initializer == 'he_normal':
+            nn.init.kaiming_normal_(self.conv.weight)
+        elif self.kernel_initializer == 'xavier_normal':
+            nn.init.xavier_normal_(self.conv.weight)
+        else:
+            raise NotImplementedError
 
     def forward(self, inputs):
         outputs = self.conv(inputs)
@@ -67,24 +75,25 @@ class Flatten(nn.Module):
 
 
 class StegaStampEncoder(nn.Module):
-    def __init__(self):
+    def __init__(self, kernel_initializer='he_normal'):
         super(StegaStampEncoder, self).__init__()
-        self.secret_dense = Dense(100, 7500, activation='relu', kernel_initializer='he_normal')
+        self.kernel_initializer = kernel_initializer
+        self.secret_dense = Dense(100, 7500, activation='relu', kernel_initializer=self.kernel_initializer)
 
-        self.conv1 = Conv2D(6, 32, 3, activation='relu')
-        self.conv2 = Conv2D(32, 32, 3, activation='relu', strides=2)
-        self.conv3 = Conv2D(32, 64, 3, activation='relu', strides=2)
-        self.conv4 = Conv2D(64, 128, 3, activation='relu', strides=2)
-        self.conv5 = Conv2D(128, 256, 3, activation='relu', strides=2)
-        self.up6 = Conv2D(256, 128, 3, activation='relu')
-        self.conv6 = Conv2D(256, 128, 3, activation='relu')
-        self.up7 = Conv2D(128, 64, 3, activation='relu')
-        self.conv7 = Conv2D(128, 64, 3, activation='relu')
-        self.up8 = Conv2D(64, 32, 3, activation='relu')
-        self.conv8 = Conv2D(64, 32, 3, activation='relu')
-        self.up9 = Conv2D(32, 32, 3, activation='relu')
-        self.conv9 = Conv2D(70, 32, 3, activation='relu')
-        self.residual = Conv2D(32, 3, 1, activation=None)
+        self.conv1 = Conv2D(6, 32, 3, activation='relu', kernel_initializer=self.kernel_initializer)
+        self.conv2 = Conv2D(32, 32, 3, activation='relu', strides=2, kernel_initializer=self.kernel_initializer)
+        self.conv3 = Conv2D(32, 64, 3, activation='relu', strides=2, kernel_initializer=self.kernel_initializer)
+        self.conv4 = Conv2D(64, 128, 3, activation='relu', strides=2, kernel_initializer=self.kernel_initializer)
+        self.conv5 = Conv2D(128, 256, 3, activation='relu', strides=2, kernel_initializer=self.kernel_initializer)
+        self.up6 = Conv2D(256, 128, 3, activation='relu', kernel_initializer=self.kernel_initializer)
+        self.conv6 = Conv2D(256, 128, 3, activation='relu', kernel_initializer=self.kernel_initializer)
+        self.up7 = Conv2D(128, 64, 3, activation='relu', kernel_initializer=self.kernel_initializer)
+        self.conv7 = Conv2D(128, 64, 3, activation='relu', kernel_initializer=self.kernel_initializer)
+        self.up8 = Conv2D(64, 32, 3, activation='relu', kernel_initializer=self.kernel_initializer)
+        self.conv8 = Conv2D(64, 32, 3, activation='relu', kernel_initializer=self.kernel_initializer)
+        self.up9 = Conv2D(32, 32, 3, activation='relu', kernel_initializer=self.kernel_initializer)
+        self.conv9 = Conv2D(70, 32, 3, activation='relu', kernel_initializer=self.kernel_initializer)
+        self.residual = Conv2D(32, 3, 1, activation=None, kernel_initializer=self.kernel_initializer)
 
     def forward(self, inputs):
         secrect, image = inputs
@@ -118,14 +127,15 @@ class StegaStampEncoder(nn.Module):
 
 
 class SpatialTransformerNetwork(nn.Module):
-    def __init__(self):
+    def __init__(self, kernel_initializer='xavier_normal'):
         super(SpatialTransformerNetwork, self).__init__()
+        self.kernel_initializer = kernel_initializer
         self.localization = nn.Sequential(
-            Conv2D(3, 32, 3, strides=2, activation='relu'),
-            Conv2D(32, 64, 3, strides=2, activation='relu'),
-            Conv2D(64, 128, 3, strides=2, activation='relu'),
+            Conv2D(3, 32, 3, strides=2, activation='relu', kernel_initializer=self.kernel_initializer),
+            Conv2D(32, 64, 3, strides=2, activation='relu', kernel_initializer=self.kernel_initializer),
+            Conv2D(64, 128, 3, strides=2, activation='relu', kernel_initializer=self.kernel_initializer),
             Flatten(),
-            Dense(320000, 128, activation='relu'),
+            Dense(320000, 128, activation='relu', kernel_initializer=self.kernel_initializer),
             nn.Linear(128, 6)
         )
         self.localization[-1].weight.data.fill_(0)
@@ -140,21 +150,22 @@ class SpatialTransformerNetwork(nn.Module):
 
 
 class StegaStampDecoder(nn.Module):
-    def __init__(self, secret_size=100):
+    def __init__(self, secret_size=100, kernel_initializer='xavier_normal'):
         super(StegaStampDecoder, self).__init__()
         self.secret_size = secret_size
+        self.kernel_initializer = kernel_initializer
         self.stn = SpatialTransformerNetwork()
         self.decoder = nn.Sequential(
-            Conv2D(3, 32, 3, strides=2, activation='relu'),
-            Conv2D(32, 32, 3, activation='relu'),
-            Conv2D(32, 64, 3, strides=2, activation='relu'),
-            Conv2D(64, 64, 3, activation='relu'),
-            Conv2D(64, 64, 3, strides=2, activation='relu'),
-            Conv2D(64, 128, 3, strides=2, activation='relu'),
-            Conv2D(128, 128, 3, strides=2, activation='relu'),
+            Conv2D(3, 32, 3, strides=2, activation='relu', kernel_initializer=self.kernel_initializer),
+            Conv2D(32, 32, 3, activation='relu', kernel_initializer=self.kernel_initializer),
+            Conv2D(32, 64, 3, strides=2, activation='relu', kernel_initializer=self.kernel_initializer),
+            Conv2D(64, 64, 3, activation='relu', kernel_initializer=self.kernel_initializer),
+            Conv2D(64, 64, 3, strides=2, activation='relu', kernel_initializer=self.kernel_initializer),
+            Conv2D(64, 128, 3, strides=2, activation='relu', kernel_initializer=self.kernel_initializer),
+            Conv2D(128, 128, 3, strides=2, activation='relu', kernel_initializer=self.kernel_initializer),
             Flatten(),
-            Dense(21632, 512, activation='relu'),
-            Dense(512, secret_size, activation=None))
+            Dense(21632, 512, activation='relu', kernel_initializer=self.kernel_initializer),
+            Dense(512, secret_size, activation=None, kernel_initializer=self.kernel_initializer))
 
     def forward(self, image):
         image = image - .5
@@ -163,14 +174,15 @@ class StegaStampDecoder(nn.Module):
 
 
 class Discriminator(nn.Module):
-    def __init__(self):
+    def __init__(self, kernel_initializer='xavier_normal'):
         super(Discriminator, self).__init__()
+        self.kernel_initializer = kernel_initializer
         self.model = nn.Sequential(
-            Conv2D(3, 8, 3, strides=2, activation='relu'),
-            Conv2D(8, 16, 3, strides=2, activation='relu'),
-            Conv2D(16, 32, 3, strides=2, activation='relu'),
-            Conv2D(32, 64, 3, strides=2, activation='relu'),
-            Conv2D(64, 1, 3, activation=None))
+            Conv2D(3, 8, 3, strides=2, activation='relu', kernel_initializer=self.kernel_initializer),
+            Conv2D(8, 16, 3, strides=2, activation='relu', kernel_initializer=self.kernel_initializer),
+            Conv2D(16, 32, 3, strides=2, activation='relu', kernel_initializer=self.kernel_initializer),
+            Conv2D(32, 64, 3, strides=2, activation='relu', kernel_initializer=self.kernel_initializer),
+            Conv2D(64, 1, 3, activation=None, kernel_initializer=self.kernel_initializer))
 
     def forward(self, image):
         x = image - .5
@@ -270,7 +282,7 @@ def build_model(encoder, decoder, discriminator, lpips_fn, secret_input, image_i
     elif borders.startswith('random'):
         mask = torchgeometry.warp_perspective(torch.ones_like(residual), M[:, 0, :, :], dsize=(400, 400),
                                               flags='bilinear')
-        encoded_image = residual_warped + input_unwarped
+        encoded_image = residual_warped + input_warped
         encoded_image = torchgeometry.warp_perspective(encoded_image, M[:, 0, :, :], dsize=(400, 400), flags='bilinear')
         input_unwarped = torchgeometry.warp_perspective(input_warped, M[:, 0, :, :], dsize=(400, 400), flags='bilinear')
         ch = 3 if borders.endswith('rgb') else 1
@@ -341,21 +353,21 @@ def build_model(encoder, decoder, discriminator, lpips_fn, secret_input, image_i
     if not args.no_gan:
         loss += loss_scales[3] * G_loss
 
-    writer.add_scalar('loss/image_loss', image_loss, global_step)
-    writer.add_scalar('loss/lpips_loss', lpips_loss, global_step)
-    writer.add_scalar('loss/secret_loss', secret_loss, global_step)
-    writer.add_scalar('loss/G_loss', G_loss, global_step)
-    writer.add_scalar('loss/loss', loss, global_step)
-
-    writer.add_scalar('metric/bit_acc', bit_acc, global_step)
-    writer.add_scalar('metric/str_acc', str_acc, global_step)
-    if global_step % 20 == 0:
-        writer.add_image('input/image_input', image_input[0], global_step)
-        writer.add_image('input/image_warped', input_warped[0], global_step)
-        writer.add_image('encoded/encoded_warped', encoded_warped[0], global_step)
-        writer.add_image('encoded/residual_warped', residual_warped[0] + 0.5, global_step)
-        writer.add_image('encoded/encoded_image', encoded_image[0], global_step)
-        writer.add_image('transformed/transformed_image', transformed_image[0], global_step)
-        writer.add_image('transformed/test', test_transform[0], global_step)
+    # writer.add_scalar('loss/image_loss', image_loss, global_step)
+    # writer.add_scalar('loss/lpips_loss', lpips_loss, global_step)
+    # writer.add_scalar('loss/secret_loss', secret_loss, global_step)
+    # writer.add_scalar('loss/G_loss', G_loss, global_step)
+    # writer.add_scalar('loss/loss', loss, global_step)
+    #
+    # writer.add_scalar('metric/bit_acc', bit_acc, global_step)
+    # writer.add_scalar('metric/str_acc', str_acc, global_step)
+    # if global_step % 20 == 0:
+    #     writer.add_image('input/image_input', image_input[0], global_step)
+    #     writer.add_image('input/image_warped', input_warped[0], global_step)
+    #     writer.add_image('encoded/encoded_warped', encoded_warped[0], global_step)
+    #     writer.add_image('encoded/residual_warped', residual_warped[0] + 0.5, global_step)
+    #     writer.add_image('encoded/encoded_image', encoded_image[0], global_step)
+    #     writer.add_image('transformed/transformed_image', transformed_image[0], global_step)
+    #     writer.add_image('transformed/test', test_transform[0], global_step)
 
     return loss, secret_loss, D_loss, bit_acc, str_acc
